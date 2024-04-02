@@ -136,39 +136,17 @@ class TransformerModel(tf.keras.Model):
         self.metrics[1].update_state(loss)
 
         return {m.name: m.result() for m in self.metrics} 
-    
-def create_dataset(sequence_length):
-    X_train = tf.cast(np.random.randint(0, 10, (1024, sequence_length)), tf.float32)
-    X_train = tf.expand_dims(X_train, axis=-1)
-    y_train = tf.reduce_sum(X_train[:, :, 0:2], axis=1)  # Addition der ersten beiden Zahlen in jeder Sequenz
-    y_train = tf.cast(y_train, tf.float32)
 
-    X_val = tf.cast(np.random.randint(0, 10, (512, sequence_length)), tf.float32)
-    X_val = tf.expand_dims(X_val, axis=-1)
-    y_val = tf.reduce_sum(X_val[:, :, 0:2], axis=1)  # Addition der ersten beiden Zahlen in jeder Sequenz
-    y_val = tf.cast(y_val, tf.float32)
-    
-    return X_train, y_train, X_val, y_val
-
-def train_and_plot_loss(sequence_lengths):
-    vocab_size = 1
-    embedding_size = 64
-    histories = {}  # Ein Dictionary zum Speichern der Verlaufshistorien
-    
-    #df = pd.read_csv('daily-min-temperatures.csv')
-    #data = df['Temp'].to_numpy()
-    #data = data.astype(np.float32)
-    #data = [(x/(max(data)/2))-1 for x in data]
-    
-    df = pd.read_csv("IBM.csv", index_col='Date', parse_dates=["Date"])
+def stock_data(seq_length):
+    df = pd.read_csv("rnn_lstm/IBM.csv", index_col='Date', parse_dates=["Date"])
     
     # Plot the training set
-    df["High"][:'2016'].plot(figsize=(16, 4), legend=True)
+    #df["High"][:'2016'].plot(figsize=(16, 4), legend=True)
     # Plot the test set
-    df["High"]['2017':].plot(figsize=(16, 4), legend=True)
-    plt.legend(['Training set (Before 2017)', 'Test set (2017 and beyond)'])
-    plt.title('IBM stock price')
-    plt.show()
+    #df["High"]['2017':].plot(figsize=(16, 4), legend=True)
+    #plt.legend(['Training set (Before 2017)', 'Test set (2017 and beyond)'])
+    #plt.title('IBM stock price')
+    #plt.show()
     
     training_set = df[:'2016'].iloc[:,1:2].values
     test_set = df['2017':].iloc[:,1:2].values
@@ -177,39 +155,50 @@ def train_and_plot_loss(sequence_lengths):
     
     X_train = []
     y_train = []
-    for i in range(60, len(training_set_scaled)):
-        X_train.append(training_set_scaled[i - 60:i, 0])
+    for i in range(seq_length, len(training_set_scaled)):
+        X_train.append(training_set_scaled[i - seq_length:i, 0])
         y_train.append(training_set_scaled[i, 0])
     X_train, y_train = np.array(X_train), np.array(y_train)
     X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[1], 1))
     
+    inputs = df["High"][len(df["High"]) - len(test_set) - seq_length:].values
+    inputs = inputs.reshape(-1,1)
+    inputs  = sc.transform(inputs)
+
+    X_test = []
+    for i in range(seq_length, len(inputs)):
+        X_test.append(inputs[i-seq_length:i, 0])
+        
+    X_test = np.array(X_test)
+    X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1], 1))
+    
+    return sc, X_train, y_train, X_test, test_set
+
+def train_and_plot_loss(sequence_lengths):
+    vocab_size = 1
+    embedding_size = 64
+    histories = {}  # Ein Dictionary zum Speichern der Verlaufshistorien
+    predictions = {}
+    
+    
     for seq_length in sequence_lengths:
+        
+        sc, X_train, y_train, X_test, test_set = stock_data(seq_length)
+        
         print(f"Training für Sequenzlänge: {seq_length}")
-        
-        # Erstellen des Datensets für die aktuelle Sequenzlänge
-        #X_train, y_train, X_val, y_val = create_dataset(seq_length)
-        
-        #train = create_weather_dataset_for_one_timestep_prediction(data,seq_length)
-        #val = create_weather_dataset_for_one_timestep_prediction(data,seq_length, validation=True)
-        
-        
         # Modell erstellen
         model = TransformerModel(vocab_size, embedding_size, seq_length)
-        
-        
         # Modell kompilieren
         model.compile(optimizer='adam', loss='mse')
-        
         # Modell trainieren
-        history = model.fit(X_train, y_train, epochs=50, batch_size=32, verbose=0)
-        
-        #history = model.fit(X_train, y_train, 
-        #                    epochs=20, 
-        #                    batch_size=32, 
-        #                    validation_data=(X_test, y_test),
-        #                    verbose=0)  # Verbosity auf 0 setzen, um den Trainingsfortschritt nicht auszugeben
-        
+        history = model.fit(X_train, y_train, epochs=10, batch_size=32, verbose=0)
         histories[seq_length] = history  # Verlaufshistorie für die aktuelle Sequenzlänge speichern
+        
+        predicted_stock_price = model.predict(X_test)
+        print(predicted_stock_price)
+        predicted_stock_price = sc.inverse_transform(predicted_stock_price)
+        print(predicted_stock_price)
+        predictions[seq_length] = predicted_stock_price
     
     # Plotten des Verlustverlaufs für jede Sequenzlänge
     plt.figure(figsize=(10, 6))
@@ -225,23 +214,15 @@ def train_and_plot_loss(sequence_lengths):
     plt.show()
     
     
-    dataset_total = pd.concat((df["High"][:'2016'], df["High"]['2017':]), axis=0)
-    inputs = dataset_total[len(dataset_total) - len(test_set) - 60:].values
-    inputs = inputs.reshape(-1,1)
-    inputs  = sc.transform(inputs)
-
-    X_test = []
-    for i in range(60, len(inputs)):
-        X_test.append(inputs[i-60:i, 0])
-        
-    X_test = np.array(X_test)
-    X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1], 1))
-    predicted_stock_price = model.predict(X_test)
-    print(predicted_stock_price)
-    predicted_stock_price = sc.inverse_transform(predicted_stock_price)
-    print(predicted_stock_price)
-    
-    plot_stock_prediction(test_set, predicted_stock_price)
+    plt.figure(figsize=(10,6))
+    plt.plot(test_set, color='red',label="Real IBM Stock Price")
+    for seq_length, prediction in predictions.items():
+        plt.plot(prediction,label=f"predicted IBM Stock price for sequence length {seq_length}")
+    plt.title("IBM Stock Price Prediction")
+    plt.xlabel("Time")
+    plt.ylabel("IBM Stock Price")
+    plt.legend()
+    plt.show()
     
     
     return histories[sequence_lengths[0]]  # Rückgabe der Verlaufshistorie für die erste Sequenzlänge
@@ -284,7 +265,7 @@ def plot_stock_prediction(test,prediction):
     plt.show()
 
 # Trainieren und Plotten des Verlustverlaufs für Sequenzlängen 3, 10 und 20
-history = train_and_plot_loss(sequence_lengths=[60])#[5,10,15,20,25,30,60])
+history = train_and_plot_loss(sequence_lengths=[5,30,200])
 
 print(history.history['loss'][-1])
     
