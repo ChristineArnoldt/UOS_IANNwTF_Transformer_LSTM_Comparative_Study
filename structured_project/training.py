@@ -1,8 +1,10 @@
 import matplotlib.pyplot as plt
-from structured_project.lstm.LSTMModel import LSTMModel
-from structured_project.preprocessing import stock_data
-from structured_project.transformer.TransformerModel import TransformerModel
+from lstm.LSTMModel import LSTMModel
+from preprocessing import stock_data
+from transformer.TransformerModel import TransformerModel
 from sklearn.metrics import mean_absolute_error, mean_squared_error
+
+import tensorflow as tf
 
 
 def train_and_plot_loss(sequence_lengths):
@@ -10,6 +12,8 @@ def train_and_plot_loss(sequence_lengths):
     embedding_size = 64
     predictions_lstm = {}
     predictions_transformer = {}
+    histories_transformer = {}
+    histories_lstm = {}
 
     for seq_length in sequence_lengths:
         sc, X_train, y_train, X_test, test_set = stock_data(seq_length)
@@ -18,15 +22,19 @@ def train_and_plot_loss(sequence_lengths):
 
         transformer = TransformerModel(vocab_size, embedding_size, seq_length)
         transformer.compile(optimizer='adam', loss='mse')
-        transformer.fit(X_train, y_train, epochs=10, batch_size=32)
-
+        #transformer.build((2764, 5, 1))
+        #print(transformer.summary())
+        histories_transformer[seq_length] = transformer.fit(X_train, y_train, epochs=10, batch_size=32)
+        
         predicted_stock_price_transformer = transformer.predict(X_test)
         predicted_stock_price_transformer = sc.inverse_transform(predicted_stock_price_transformer)
         predictions_transformer[seq_length] = predicted_stock_price_transformer
 
         lstm = LSTMModel()
         lstm.compile(optimizer='adam', loss='mean_squared_error')
-        lstm.fit(X_train, y_train, epochs=10, batch_size=32)
+        #lstm.build((2764, 5, 1))
+        #print(lstm.summary())
+        histories_lstm[seq_length] = lstm.fit(X_train, y_train, epochs=10, batch_size=32)
 
         predicted_stock_price_lstm = lstm.predict(X_test)
         predicted_stock_price_lstm = sc.inverse_transform(predicted_stock_price_lstm)
@@ -44,22 +52,40 @@ def train_and_plot_loss(sequence_lengths):
         print(f"LSTM - MAE: {mae_lstm}, MSE: {mse_lstm}")
 
     # Plotten des Verlustverlaufs für jede Sequenzlänge
-    '''
     plt.figure(figsize=(10, 6))
-    for seq_length, history in histories.items():
-        plt.plot(history.history['loss'], label=f"Sequenzlänge {seq_length} (Train)")
-
-    plt.title('Verlustverlauf für verschiedene Sequenzlängen')
-    plt.xlabel('Epochen')
-    plt.ylabel('Verlust')
+    for seq_length, history in histories_lstm.items():
+        plt.plot(history.history['loss'], label=f"LSTM - sequence length {seq_length} (train)")
+    plt.title('Loss trend for different sequence lengths')
+    plt.xlabel('epochs')
+    plt.ylabel('loss')
+    plt.ylim(0, 0.01)
     plt.legend()
     plt.show()
-    '''
-
+    
+    plt.figure(figsize=(10, 6))
+    for seq_length, history in histories_lstm.items():
+        plt.plot(history.history['loss'], label=f"Transformer - sequence length {seq_length} (train)")
+    plt.title('Loss trend for different sequence lengths')
+    plt.xlabel('epochs')
+    plt.ylabel('loss')
+    plt.ylim(0, 0.01)
+    plt.legend()
+    plt.show()
+    
+    
+    # plotting LSTM predictions
     plt.figure(figsize=(10, 6))
     plt.plot(test_set, color='red', label="Real IBM Stock Price")
     for seq_length, prediction in predictions_lstm.items():
         plt.plot(prediction, label=f"LSTM - sequence length {seq_length}")
+    plt.title("IBM Stock Price Prediction")
+    plt.xlabel("Time")
+    plt.ylabel("IBM Stock Price")
+    plt.legend()
+    plt.show()
+    # plotting transformer predictions
+    plt.figure(figsize=(10, 6))
+    plt.plot(test_set, color='red', label="Real IBM Stock Price")
     for seq_length, prediction in predictions_transformer.items():
         plt.plot(prediction, label=f"Transformer - sequence length {seq_length}")
     plt.title("IBM Stock Price Prediction")
@@ -68,6 +94,19 @@ def train_and_plot_loss(sequence_lengths):
     plt.legend()
     plt.show()
 
+    # plotting predictions of both models for the maximum and minimum sequence length
+    plt.figure(figsize=(10, 6))
+    plt.plot(test_set, color='red', label="Real IBM Stock Price")
+    for seq_length in [min(sequence_lengths), max(sequence_lengths)]:
+        plt.plot(predictions_lstm[seq_length], label=f"LSTM - sequence length {seq_length}")
+    for seq_length in [min(sequence_lengths), max(sequence_lengths)]:
+        plt.plot(predictions_transformer[seq_length], label=f"Transformer - sequence length {seq_length}")
+    plt.title("IBM Stock Price Prediction")
+    plt.xlabel("Time")
+    plt.ylabel("IBM Stock Price")
+    plt.legend()
+    plt.show()
+
 
 # Trainieren und Plotten des Verlustverlaufs für Sequenzlängen 3, 10 und 20
-train_and_plot_loss(sequence_lengths=[250])
+train_and_plot_loss(sequence_lengths=[5,30,400])

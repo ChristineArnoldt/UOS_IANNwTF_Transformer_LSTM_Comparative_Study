@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from structured_project.lstm.LSTMCell import LSTM_Cell
+from lstm.LSTMCell import LSTM_Cell
 
 
 class LSTMModel(tf.keras.Model):
@@ -8,13 +8,13 @@ class LSTMModel(tf.keras.Model):
         super().__init__()
 
         self.layer_list = [
-            tf.keras.layers.RNN(LSTM_Cell(units=100), return_sequences=True),
-            tf.keras.layers.Dropout(rate=0.3),
-            tf.keras.layers.RNN(LSTM_Cell(units=80), return_sequences=True),
+            #tf.keras.layers.RNN(LSTM_Cell(units=100), return_sequences=True),
+            #tf.keras.layers.Dropout(rate=0.3),
+            tf.keras.layers.RNN(LSTM_Cell(units=72), return_sequences=True),
             tf.keras.layers.Dropout(rate=0.1),
-            tf.keras.layers.RNN(LSTM_Cell(units=50), return_sequences=True),
+            tf.keras.layers.RNN(LSTM_Cell(units=30), return_sequences=True),
             tf.keras.layers.Dropout(rate=0.2),
-            tf.keras.layers.RNN(LSTM_Cell(units=30)),
+            tf.keras.layers.RNN(LSTM_Cell(units=20)),
             tf.keras.layers.Dropout(rate=0.3),
         ]
 
