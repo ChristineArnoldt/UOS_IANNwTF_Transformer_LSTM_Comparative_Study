@@ -15,7 +15,7 @@ class TransformerModel(tf.keras.Model):
         self.pooling_layer = tf.keras.layers.GlobalAveragePooling1D()
         self.output_layer = tf.keras.layers.Dense(vocabulary_size, activation=None)
 
-        self.metrics_list = [tf.keras.metrics.Mean(name="loss"), tf.keras.metrics.Mean(name="val_loss")]
+        self.metrics_list = [tf.keras.metrics.Mean(name="loss")]
 
         self.layer_list = [
             self.positional_layer,
@@ -71,6 +71,6 @@ class TransformerModel(tf.keras.Model):
         output = self.call(sequence, training=False)
         loss = self.compiled_loss(label, output)
 
-        self.metrics[1].update_state(loss)
+        self.metrics[0].update_state(loss)
 
         return {m.name: m.result() for m in self.metrics}
