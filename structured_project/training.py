@@ -14,7 +14,7 @@ def train_and_plot_loss(sequence_lengths):
     for seq_length in sequence_lengths:
         sc, X_train, y_train, X_test, test_set = stock_data(seq_length)
 
-        print(f"Training für Sequenzlänge: {seq_length}")
+        print(f"Training for sequence length: {seq_length}")
 
         transformer = TransformerModel(vocab_size, embedding_size, seq_length)
         transformer.compile(optimizer='adam', loss='mse')
@@ -39,7 +39,7 @@ def train_and_plot_loss(sequence_lengths):
         mse_lstm = mean_squared_error(test_set, predicted_stock_price_lstm)
 
         # Ausgabe der Genauigkeit
-        print(f"Sequenzlänge: {seq_length}")
+        print(f"Sequence length: {seq_length}")
         print(f"Transformer - MAE: {mae_transformer}, MSE: {mse_transformer}")
         print(f"LSTM - MAE: {mae_lstm}, MSE: {mse_lstm}")
 
@@ -59,9 +59,9 @@ def train_and_plot_loss(sequence_lengths):
     plt.figure(figsize=(10, 6))
     plt.plot(test_set, color='red', label="Real IBM Stock Price")
     for seq_length, prediction in predictions_lstm.items():
-        plt.plot(prediction, label=f"LSTM - Sequenzlänge {seq_length}")
+        plt.plot(prediction, label=f"LSTM - sequence length {seq_length}")
     for seq_length, prediction in predictions_transformer.items():
-        plt.plot(prediction, label=f"Transformer - Sequenzlänge {seq_length}")
+        plt.plot(prediction, label=f"Transformer - sequence length {seq_length}")
     plt.title("IBM Stock Price Prediction")
     plt.xlabel("Time")
     plt.ylabel("IBM Stock Price")
@@ -70,4 +70,4 @@ def train_and_plot_loss(sequence_lengths):
 
 
 # Trainieren und Plotten des Verlustverlaufs für Sequenzlängen 3, 10 und 20
-train_and_plot_loss(sequence_lengths=[5,400])
+train_and_plot_loss(sequence_lengths=[250])
