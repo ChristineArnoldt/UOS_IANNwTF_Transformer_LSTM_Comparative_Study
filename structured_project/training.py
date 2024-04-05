@@ -63,7 +63,7 @@ def train_and_plot_loss(sequence_lengths):
     plt.show()
     
     plt.figure(figsize=(10, 6))
-    for seq_length, history in histories_lstm.items():
+    for seq_length, history in histories_transformer.items():
         plt.plot(history.history['loss'], label=f"Transformer - sequence length {seq_length} (train)")
     plt.title('Loss trend for different sequence lengths')
     plt.xlabel('epochs')
