@@ -8,9 +8,14 @@ import tensorflow as tf
 
 def train_and_plot_loss(sequence_lengths):
     """
-    Train LSTM and Transformer models for different sequence lengths and plot the loss trend and predictions.
-    :param sequence_lengths: List of sequence lengths to train the models for.
-    :return: None
+    Train LSTM and Transformer models for different sequence lengths,
+    plot the loss trend during training, and visualize the predictions.
+
+    Args:
+    - sequence_lengths (list): List of sequence lengths to train the models with
+
+    Returns:
+    None
     """
     vocab_size = 1
     embedding_size = 64
