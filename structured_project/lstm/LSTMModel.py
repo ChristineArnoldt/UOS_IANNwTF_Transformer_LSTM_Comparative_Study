@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from structured_project.lstm.LSTMCell import LSTMCell
+from lstm.LSTMCell import LSTMCell
 
 
 class LSTMModel(tf.keras.Model):

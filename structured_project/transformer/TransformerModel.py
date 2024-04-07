@@ -1,6 +1,6 @@
 import tensorflow as tf
-from structured_project.transformer.PositionalEmbeddingLayer import PositionalEmbeddingLayer
-from structured_project.transformer.TransformerBlock import TransformerBlock
+from transformer.PositionalEmbeddingLayer import PositionalEmbeddingLayer
+from transformer.TransformerBlock import TransformerBlock
 
 
 class TransformerModel(tf.keras.Model):
