@@ -1,37 +1,48 @@
 import tensorflow as tf
 
-from lstm.LSTMCell import LSTM_Cell
+from structured_project.lstm.LSTMCell import LSTMCell
 
 
 class LSTMModel(tf.keras.Model):
+    """Custom LSTM model class."""
     def __init__(self):
+        """Initialize the LSTM model."""
         super().__init__()
 
+        # Define the layers of the model
         self.layer_list = [
-            #tf.keras.layers.RNN(LSTM_Cell(units=100), return_sequences=True),
-            #tf.keras.layers.Dropout(rate=0.3),
-            tf.keras.layers.RNN(LSTM_Cell(units=72), return_sequences=True),
+            tf.keras.layers.RNN(LSTMCell(units=72), return_sequences=True),
             tf.keras.layers.Dropout(rate=0.1),
-            tf.keras.layers.RNN(LSTM_Cell(units=30), return_sequences=True),
+            tf.keras.layers.RNN(LSTMCell(units=30), return_sequences=True),
             tf.keras.layers.Dropout(rate=0.2),
-            tf.keras.layers.RNN(LSTM_Cell(units=20)),
+            tf.keras.layers.RNN(LSTMCell(units=20)),
             tf.keras.layers.Dropout(rate=0.3),
         ]
-
         self.output_layer = tf.keras.layers.Dense(units=1)
-
         self.metrics_list = [tf.keras.metrics.Mean(name="loss")]
 
     @property
     def metrics(self):
+        """Return the list of metrics."""
         return self.metrics_list
 
     def reset_metrics(self):
+        """Reset the state of the metrics."""
         for metric in self.metrics:
             metric.reset_state()
 
     @tf.function
     def call(self, sequence, training=False):
+        """
+        Apply the layers sequentially to the input sequence and return the output prediction.
+
+        Args:
+            sequence (tf.Tensor): Input sequence data.
+            training (bool): Flag indicating whether the model is in training mode.
+
+        Returns:
+            tf.Tensor: Output prediction.
+        """
         x = sequence
         for layer in self.layer_list:
             x = layer(x)
@@ -41,9 +52,13 @@ class LSTMModel(tf.keras.Model):
     @tf.function
     def train_step(self, data):
         """
-        Standard train_step method
-        :param data:
-        :return:
+        Perform a single training step.
+
+        Args:
+            data (tuple): Tuple containing input sequence and corresponding labels.
+
+        Returns:
+            dict: Dictionary containing the training metrics.
         """
 
         sequence, label = data
@@ -61,9 +76,13 @@ class LSTMModel(tf.keras.Model):
     @tf.function
     def test_step(self, data):
         """
-        Standard test_step method
-        :param data:
-        :return:
+        Perform a single testing step.
+
+        Args:
+            data (tuple): Tuple containing input sequence and corresponding labels.
+
+        Returns:
+            dict: Dictionary containing the testing metrics.
         """
 
         sequence, label = data
